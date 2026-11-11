@@ -103,7 +103,7 @@ class MenuApp extends StatelessWidget {
           darkTheme: ThemeData(
             useMaterial3: true,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFFE07A5F),
+              seedColor: const Color(0xFF8B3A2A),
               brightness: Brightness.dark,
               surface: const Color(0xFF121212),
             ),
