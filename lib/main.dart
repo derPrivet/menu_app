@@ -246,10 +246,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     openCounter: _openCounter,
                   ),
                   DiaryTab(allRecipes: allRecipes),
-                  const ProgressTab(),
-                  PlannerTab(
-                    allRecipes: allRecipes,
-                  ), // <--- Передаем список рецептов
+                  PlannerTab(allRecipes: allRecipes), // <--- План теперь 3-й
+                  const ProgressTab(), // <--- Прогресс теперь 4-й
                 ],
               ),
             ),
@@ -276,14 +274,14 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Дневник',
           ),
           NavigationDestination(
-            icon: Icon(Icons.trending_up_outlined),
-            selectedIcon: Icon(Icons.trending_up),
-            label: 'Прогресс',
+            icon: Icon(Icons.calendar_month_outlined), // <--- Иконка Плана
+            selectedIcon: Icon(Icons.calendar_month),
+            label: 'План',
           ),
           NavigationDestination(
-            icon: Icon(Icons.flag_outlined),
-            selectedIcon: Icon(Icons.flag),
-            label: 'План',
+            icon: Icon(Icons.trending_up_outlined), // <--- Иконка Прогресса
+            selectedIcon: Icon(Icons.trending_up),
+            label: 'Прогресс',
           ),
         ],
       ),
