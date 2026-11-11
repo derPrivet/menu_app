@@ -392,18 +392,18 @@ class _DiaryTabState extends State<DiaryTab> {
 
   String _formatDate() {
     const months = [
-      'янв',
-      'фев',
-      'мар',
-      'апр',
+      'января',
+      'февраля',
+      'марта',
+      'апреля',
       'мая',
-      'июн',
-      'июл',
-      'авг',
-      'сен',
-      'окт',
-      'ноя',
-      'дек',
+      'июня',
+      'июля',
+      'августа',
+      'сентября',
+      'октября',
+      'ноября',
+      'декабря',
     ];
     final now = DateTime.now();
     final base = '${_date.day} ${months[_date.month - 1]}';

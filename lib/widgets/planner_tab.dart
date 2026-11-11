@@ -320,18 +320,18 @@ class _PlannerTabState extends State<PlannerTab> {
 
   String _formatDate() {
     const months = [
-      'янв',
-      'фев',
-      'мар',
-      'апр',
+      'января',
+      'февраля',
+      'марта',
+      'апреля',
       'мая',
-      'июн',
-      'июл',
-      'авг',
-      'сен',
-      'окт',
-      'ноя',
-      'дек',
+      'июня',
+      'июля',
+      'августа',
+      'сентября',
+      'октября',
+      'ноября',
+      'декабря',
     ];
     final now = DateTime.now();
     final isToday =
@@ -672,7 +672,7 @@ class _PlannerTabState extends State<PlannerTab> {
                     Icon(Icons.add, size: 16, color: Color(0xFF3F8F6B)),
                     SizedBox(width: 6),
                     Text(
-                      'Запланировать блюдо',
+                      'Добавить блюдо в план',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -704,7 +704,7 @@ class _PlannerTabState extends State<PlannerTab> {
                     Icon(Icons.eco, size: 16, color: Color(0xFFE07A5F)),
                     SizedBox(width: 6),
                     Text(
-                      'Добавить продукт',
+                      'Добавить продукт в план',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
