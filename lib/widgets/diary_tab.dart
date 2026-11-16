@@ -147,8 +147,10 @@ class _DiaryTabState extends State<DiaryTab> {
     super.dispose();
   }
 
+  // ИСПРАВЛЕНО: Добавлена закрывающая скобка и вызов загрузки продуктов
   void _onDiaryChanged() {
     _load();
+    _loadUserProducts();
   }
 
   Future<void> _load() async {

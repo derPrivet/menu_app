@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user_product.dart';
 import '../services/user_product_storage.dart';
+import '../services/diary_events.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -46,6 +47,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
 
     await UserProductStorage.addProduct(product);
+    notifyDiaryChanged();
 
     if (mounted) {
       Navigator.pop(context, true); // Возвращаем true, чтобы обновить список

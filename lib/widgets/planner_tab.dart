@@ -3,7 +3,7 @@ import '../models/recipe.dart';
 import '../models/meal_plan.dart';
 import '../models/diary.dart';
 import '../models/user_product.dart';
-import '../data/basic_products.dart'; // <--- ДОБАВИЛИ ИМПОРТ БАЗОВЫХ ПРОДУКТОВ
+import '../data/basic_products.dart';
 import '../services/planner_storage.dart';
 import '../services/diary_storage.dart';
 import '../services/diary_events.dart';
@@ -54,6 +54,20 @@ class _PlannerTabState extends State<PlannerTab> {
   @override
   void initState() {
     super.initState();
+    _loadPlan();
+    _loadUserProducts();
+    diaryVersionNotifier.addListener(_onGlobalUpdate);
+  }
+
+  // ДОБАВЛЕНО: Отписываемся от уведомлений при уничтожении вкладки
+  @override
+  void dispose() {
+    diaryVersionNotifier.removeListener(_onGlobalUpdate);
+    super.dispose();
+  }
+
+  // ДОБАВЛЕНО: Метод, который вызывается при сигнале обновления
+  void _onGlobalUpdate() {
     _loadPlan();
     _loadUserProducts();
   }
