@@ -16,7 +16,7 @@ const _plannerGradient = LinearGradient(
   colors: [Color(0xFF2D6E4F), Color(0xFF3F8F6B)],
 );
 
-// Вспомогательный класс для выбора продуктов (свои + базовые)
+// Вспомогательный класс для выбора продуктов (свои + базовые + рецепты)
 class _ProductSource {
   final String id;
   final String title;
@@ -59,14 +59,12 @@ class _PlannerTabState extends State<PlannerTab> {
     diaryVersionNotifier.addListener(_onGlobalUpdate);
   }
 
-  // ДОБАВЛЕНО: Отписываемся от уведомлений при уничтожении вкладки
   @override
   void dispose() {
     diaryVersionNotifier.removeListener(_onGlobalUpdate);
     super.dispose();
   }
 
-  // ДОБАВЛЕНО: Метод, который вызывается при сигнале обновления
   void _onGlobalUpdate() {
     _loadPlan();
     _loadUserProducts();
@@ -94,7 +92,6 @@ class _PlannerTabState extends State<PlannerTab> {
   List<_ProductSource> get _allProducts {
     final list = <_ProductSource>[];
 
-    // 1. Личные продукты (Йогурт и т.д.)
     for (final p in _userProducts) {
       list.add(
         _ProductSource(
@@ -108,7 +105,6 @@ class _PlannerTabState extends State<PlannerTab> {
       );
     }
 
-    // 2. Базовые продукты (Яблоко, Банан, Гречка и т.д.)
     for (final p in basicProducts) {
       list.add(
         _ProductSource(
@@ -121,6 +117,30 @@ class _PlannerTabState extends State<PlannerTab> {
         ),
       );
     }
+
+    return list;
+  }
+
+  // Объединенный список (Рецепты + Продукты) для зеленой кнопки
+  List<_ProductSource> get _allItems {
+    final list = <_ProductSource>[];
+
+    // Добавляем рецепты
+    for (final r in widget.allRecipes) {
+      list.add(
+        _ProductSource(
+          id: r.id,
+          title: r.title,
+          kcal100: r.kcal100,
+          protein100: r.protein100,
+          fat100: r.fat100,
+          carb100: r.carb100,
+        ),
+      );
+    }
+
+    // Добавляем продукты (свои + базовые)
+    list.addAll(_allProducts);
 
     return list;
   }
@@ -158,7 +178,6 @@ class _PlannerTabState extends State<PlannerTab> {
   ({int kcal, int protein, int fat, int carb}) _calcNutrients(
     PlannedMeal meal,
   ) {
-    // 1. Проверяем личные продукты
     if (meal.recipeId.startsWith('user_product_')) {
       final productId = meal.recipeId.replaceFirst('user_product_', '');
       try {
@@ -175,7 +194,6 @@ class _PlannerTabState extends State<PlannerTab> {
       }
     }
 
-    // 2. Проверяем базовые продукты
     if (meal.recipeId.startsWith('product_')) {
       final productId = meal.recipeId.replaceFirst('product_', '');
       try {
@@ -192,7 +210,6 @@ class _PlannerTabState extends State<PlannerTab> {
       }
     }
 
-    // 3. Иначе ищем в рецептах
     final recipe = _findRecipe(meal.recipeId);
     if (recipe == null) return (kcal: 0, protein: 0, fat: 0, carb: 0);
 
@@ -211,29 +228,35 @@ class _PlannerTabState extends State<PlannerTab> {
   int get _totalFat => _plan.fold(0, (s, m) => s + _calcNutrients(m).fat);
   int get _totalCarb => _plan.fold(0, (s, m) => s + _calcNutrients(m).carb);
 
+  // ЗЕЛЕНАЯ КНОПКА: Объединенный список
   Future<void> _addMeal(String mealType) async {
-    final recipe = await showModalBottomSheet<Recipe>(
+    final allItems = _allItems;
+
+    final selected = await showModalBottomSheet<_ProductSource>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _RecipePickerSheet(recipes: widget.allRecipes),
+      builder: (ctx) => _ProductPickerSheet(
+        products: allItems,
+        title: 'Выбрать блюдо или продукт',
+      ),
     );
-    if (recipe == null || !mounted) return;
+    if (selected == null || !mounted) return;
 
     final weight = await showModalBottomSheet<double>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) =>
-          _WeightInputSheet(title: recipe.title, kcal100: recipe.kcal100),
+          _WeightInputSheet(title: selected.title, kcal100: selected.kcal100),
     );
     if (weight == null || !mounted) return;
 
     final newMeal = PlannedMeal(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       mealType: mealType,
-      recipeId: recipe.id,
-      recipeTitle: recipe.title,
+      recipeId: selected.id,
+      recipeTitle: selected.title,
       weight: weight,
     );
 
@@ -241,6 +264,7 @@ class _PlannerTabState extends State<PlannerTab> {
     await PlannerStorage.savePlan(_date, _plan);
   }
 
+  // ОРАНЖЕВАЯ КНОПКА: Только продукты
   Future<void> _addUserProduct(String mealType) async {
     final allProds = _allProducts;
     if (allProds.isEmpty) {
@@ -254,7 +278,10 @@ class _PlannerTabState extends State<PlannerTab> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _ProductPickerSheet(products: allProds),
+      builder: (ctx) => _ProductPickerSheet(
+        products: allProds,
+        title: 'Выбрать продукт',
+      ),
     );
     if (product == null || !mounted) return;
 
@@ -736,22 +763,23 @@ class _PlannerTabState extends State<PlannerTab> {
   }
 }
 
-// ============ ВЫБОР РЕЦЕПТА ============
-class _RecipePickerSheet extends StatefulWidget {
-  final List<Recipe> recipes;
-  const _RecipePickerSheet({required this.recipes});
+// ============ ВЫБОР (ОБЪЕДИНЕННЫЙ СПИСОК) ============
+class _ProductPickerSheet extends StatefulWidget {
+  final List<_ProductSource> products;
+  final String title;
+  const _ProductPickerSheet({required this.products, required this.title});
 
   @override
-  State<_RecipePickerSheet> createState() => _RecipePickerSheetState();
+  State<_ProductPickerSheet> createState() => _ProductPickerSheetState();
 }
 
-class _RecipePickerSheetState extends State<_RecipePickerSheet> {
+class _ProductPickerSheetState extends State<_ProductPickerSheet> {
   String _query = '';
 
   @override
   Widget build(BuildContext context) {
-    final filtered = widget.recipes
-        .where((r) => r.title.toLowerCase().contains(_query.toLowerCase()))
+    final filtered = widget.products
+        .where((p) => p.title.toLowerCase().contains(_query.toLowerCase()))
         .toList();
 
     return Container(
@@ -777,91 +805,19 @@ class _RecipePickerSheetState extends State<_RecipePickerSheet> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                Text(
+                  widget.title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   onChanged: (v) => setState(() => _query = v),
                   decoration: InputDecoration(
-                    hintText: '🔍 Поиск рецепта',
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: Color(0xFFE07A5F),
-                    ),
-                    filled: true,
-                    fillColor: AppColors.fieldBg(context),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: filtered.length,
-              itemBuilder: (_, i) {
-                final r = filtered[i];
-                return Material(
-                  color: Colors.transparent,
-                  child: ListTile(
-                    title: Text(r.title),
-                    subtitle: Text('🔥 ${r.kcal100.toInt()} ккал/100г'),
-                    onTap: () => Navigator.pop(context, r),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============ ВЫБОР ПРОДУКТА (СВОИ + БАЗОВЫЕ) ============
-class _ProductPickerSheet extends StatefulWidget {
-  final List<_ProductSource> products;
-  const _ProductPickerSheet({required this.products});
-
-  @override
-  State<_ProductPickerSheet> createState() => _ProductPickerSheetState();
-}
-
-class _ProductPickerSheetState extends State<_ProductPickerSheet> {
-  String _query = '';
-
-  @override
-  Widget build(BuildContext context) {
-    final filtered = widget.products
-        .where((p) => p.title.toLowerCase().contains(_query.toLowerCase()))
-        .toList();
-
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
-      decoration: BoxDecoration(
-        color: AppColors.cardBg(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.border(context),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  onChanged: (v) => setState(() => _query = v),
-                  decoration: InputDecoration(
-                    hintText: '🔍 Поиск продукта',
+                    hintText: '🔍 Поиск',
                     prefixIcon: const Icon(
                       Icons.search,
                       color: Color(0xFFE07A5F),
